@@ -30,5 +30,8 @@ use WPCode\WP_Code_Admin_Settings;
     <p><?php echo esc_html('You can also customize the currency and amount for individual buttons:'); ?></p>
     <code>[code_payment_button currency="usd" amount="10"]</code>
     
-    <p><?php echo esc_html('If no attributes are provided, the button will use the default values set in the configuration above.'); ?></p>
+    <p><?php echo esc_html('To add a login button to your posts or pages, use the following shortcode:'); ?></p>
+    <code>[code_login_button]</code>
+    
+    <p><?php echo esc_html('If no attributes are provided, the buttons will use the default values set in the configuration above.'); ?></p>
 </div>
