@@ -38,7 +38,8 @@ class PostUnlock extends WP_Code_Payment_Request {
         $unlock_price = $this->get_unlock_price($post->ID);
         
         if ($unlock_price > 0) {
-            $teaser = wp_trim_words($content, 50, '...');
+            $teaser_length = $this->config['teaser_length'] ?? 50;
+            $teaser = wp_trim_words($content, $teaser_length, '...');
             $unlock_button = $this->render_button_shortcode([
                 'amount' => $unlock_price,
                 'post_id' => $post->ID,
@@ -96,6 +97,8 @@ class PostUnlock extends WP_Code_Payment_Request {
             $atts
         );
     
+        $website_public_key = get_option('code_sdk_wp_options')['website_public_key'] ?? '';
+    
         ob_start();
         ?>
         <div id="payment-container" data-full-content="<?php echo esc_attr(wp_kses_post($attributes['full_content'])); ?>">
@@ -103,48 +106,37 @@ class PostUnlock extends WP_Code_Payment_Request {
             <div id="thank-you-message" style="display: none; margin-top: 10px; font-weight: bold;"></div>
         </div>
     
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.CodeWallet && window.CodeWallet.elements && !window.codeWalletButtonMounted) {
-                const { button } = window.CodeWallet.elements.create('button', {
-                    currency: '<?php echo esc_js($attributes['currency']); ?>',
-                    destination: '<?php echo esc_js($this->config['destination_address']); ?>',
-                    amount: <?php echo intval($attributes['amount']); ?>
-                });
-
-                button.on('success', () => {
-                    try {
-                        console.log('Payment successful, updating post content');
-                        const postContent = document.querySelector('.entry-content');
-                        const paymentContainer = document.getElementById('payment-container');
-                        const buttonContainer = document.getElementById('button-container');
-                        const thankYouElement = document.getElementById('thank-you-message');
-
-                        if (postContent && paymentContainer) {
-                            const fullContent = paymentContainer.dataset.fullContent;
-                            postContent.innerHTML = fullContent;
-                        }
-
-                        if (buttonContainer) {
-                            buttonContainer.style.display = 'none';
-                        }
-
-                        if (thankYouElement) {
-                            thankYouElement.textContent = 'Thank you for your payment!';
-                            thankYouElement.style.display = 'block';
-                        }
-                    } catch (error) {
-                        console.error('Error updating content after payment:', error);
-                    }
-                });
-
-                button.mount('#button-container');
-                window.codeWalletButtonMounted = true;
-            }
-        });
+        <script type="module">
+            import code from 'https://js.getcode.com/v1';
+    
+            const { button } = code.elements.create('button', {
+                currency: '<?php echo esc_js($attributes['currency']); ?>',
+                destination: '<?php echo esc_js($this->config['destination_address']); ?>',
+                amount: <?php echo intval($attributes['amount']); ?>,
+                verifier: '<?php echo esc_js($website_public_key); ?>'
+            });
+    
+            button.on('success', () => {
+                const buttonContainer = document.getElementById('button-container');
+                buttonContainer.style.display = 'none';
+    
+                const thankYouElement = document.getElementById('thank-you-message');
+                thankYouElement.textContent = 'Thank you for your payment!';
+                thankYouElement.style.display = 'block';
+    
+                const postContent = document.querySelector('.entry-content');
+                const paymentContainer = document.getElementById('payment-container');
+                if (postContent && paymentContainer) {
+                    const fullContent = paymentContainer.dataset.fullContent;
+                    postContent.innerHTML = fullContent;
+                }
+            });
+    
+            button.mount('#button-container');
         </script>
-
+    
         <?php
         return ob_get_clean();
     }
+    
 }

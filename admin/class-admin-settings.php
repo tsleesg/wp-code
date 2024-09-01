@@ -13,7 +13,7 @@ class WP_Code_Admin_Settings {
         add_action('admin_menu', array($this, 'add_plugin_page'));
         add_action('admin_init', array($this, 'page_init'));
         add_action('admin_init', array($this, 'reset_settings'));
-    }    
+    }
 
     public function add_plugin_page() {
         add_options_page(
@@ -55,6 +55,7 @@ class WP_Code_Admin_Settings {
             'default_amount' => 'Default Amount',
             'currency' => 'Currency',
             'destination_address' => 'Destination Address',
+            'teaser_length' => 'Teaser Preview Length',
             'debug_mode' => 'Debug Mode'
         );
 
@@ -97,6 +98,10 @@ class WP_Code_Admin_Settings {
         $this->render_text_field('destination_address', 'XXXXXXXX');
     }
 
+    public function teaser_length_callback() {
+        $this->render_number_field('teaser_length', 50);
+    }
+
     public function debug_mode_callback() {
         printf(
             '<input type="checkbox" id="debug_mode" name="%s[debug_mode]" value="1" %s />',
@@ -127,12 +132,16 @@ class WP_Code_Admin_Settings {
 
     public function sanitize($input) {
         $new_input = array();
-        $fields = array('webhook_url', 'sequencer_public_key', 'min_amount', 'default_amount', 'currency', 'destination_address');
+        $fields = array('webhook_url', 'sequencer_public_key', 'min_amount', 'default_amount', 'currency', 'destination_address', 'teaser_length');
 
         foreach ($fields as $field) {
             if (isset($input[$field])) {
                 $new_input[$field] = sanitize_text_field($input[$field]);
             }
+        }
+
+        if (isset($input['teaser_length'])) {
+            $new_input['teaser_length'] = intval($input['teaser_length']);
         }
 
         $new_input['debug_mode'] = isset($input['debug_mode']) ? 1 : 0;
@@ -148,7 +157,8 @@ class WP_Code_Admin_Settings {
                 'min_amount' => 2500,
                 'default_amount' => 5000,
                 'currency' => 'kin',
-                'destination_address' => 'XXXXXXXXX',
+                'destination_address' => 'XXXXXXXX',
+                'teaser_length' => 50,
                 'debug_mode' => false,
             );
             update_option(self::OPTION_NAME, $default_options);
@@ -165,6 +175,7 @@ class WP_Code_Admin_Settings {
             'min_amount' => $options['min_amount'] ?? 2500,
             'default_amount' => $options['default_amount'] ?? 5000,
             'currency' => $options['currency'] ?? 'kin',
+            'teaser_length' => $options['teaser_length'] ?? 50,
             'version' => defined('CODE_SDK_WP_VERSION') ? CODE_SDK_WP_VERSION : '1.0.0',
             'plugin_url' => defined('CODE_SDK_WP_PLUGIN_URL') ? CODE_SDK_WP_PLUGIN_URL : plugin_dir_url(__FILE__),
         );
